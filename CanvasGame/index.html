@@ -1,0 +1,342 @@
+<html>
+<head>
+<title>Papich Vs Coronavirus</title>
+</head>
+<body>
+<h1>Помогите папичу уничтожить вирус</h1>
+<p>Настройте звук потише</p>
+<div>
+  <p>Музыка в игре</p>
+  <p>Немогу настроить чтобы музыка не повторялась</p>
+	  <audio id="backgroundaudio" autoplay="" controls="" loop="" preload=""> 
+		  <source src="msc/solyara.mp3" type="audio/mpeg"></source> 
+		  		  Your browser does not support the audio element. 
+	  </audio> 
+</div>
+<div id="game">
+  <b id="title">Papich Vs CoronaVirus Alpha 0.0.7c</b>
+  <br>
+  <link rel="stylesheet" type="text/css" href="css/css.css">
+
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<script src='gamecore.js'></script>
+
+<script language="JavaScript">
+var audio = document.getElementById('backgroundaudio');
+var DAROVA = new Audio('msc/DAROVA.wav');
+var audi2 = new Audio('msc/VIKA.mp3');
+var audi3 = new Audio('msc/lose.mp3');
+var can = document.getElementById("canvas");
+var c = can.getContext('2d');
+
+player.width = 46;
+player.height = 46;
+
+var ship_image;
+var bomb_image;
+var bullet_image;
+ 
+loadResources();
+ 
+function loadResources() {
+  ship_image = new Image();
+  ship_image.src = "images/Papyla1.png";
+
+  bomb_image = new Image();
+  bomb_image.src = "images/bomb.png";
+ 
+  bullet_image = new Image();
+  bullet_image.src = "images/bullets.png";
+
+}
+
+function mainLoop() {
+	var c = can.getContext('2d');
+	
+	updateGame();
+	updateBackground();
+	drawBackground(c);
+	updateEnemies();
+	if(game.state == 'playing'){
+		updatePlayer();
+		updatePlayerBullets();
+		updateEnemyBullets();
+		checkCollisions();
+		drawInfo();
+		drawEnemies(c);
+		drawPlayer(c);
+		drawEnemyBullets(c);
+		drawPlayerBullets(c);
+	}
+	drawOverlay(c);
+}
+
+// =========== player ============
+function firePlayerBullet() {
+	//create a new bullet
+	playerBullets.push({
+		x: player.x,
+		y: player.y - 5,
+		width:10,
+		height:10,
+	});
+}
+
+function drawPlayer(c) {
+  if(player.state == "dead") return;
+ 
+  if(player.state == "hit") {
+    drawPlayerExplosion(c);
+    return;
+  }
+  c.drawImage(ship_image,
+    player.x, player.y, player.width, player.height // конечные координаты
+  );
+}
+
+var particles = [];
+function drawPlayerExplosion(c) {
+  // старт
+  if(player.counter == 0) {
+    particles = []; // стираем все старые значения
+    for(var i = 0; i<50; i++) {
+      particles.push({
+        x: player.x + player.width/2,
+        y: player.y + player.height/2,
+        xv: (Math.random()-0.5)*2.0*5.0,  // скорость по x
+        yv: (Math.random()-0.5)*2.0*5.0,  // скорость по y
+        age: 0,
+     });
+
+  }
+}
+   if(player.counter > 0) {
+    for(var i=0; i<particles.length; i++) {
+      var p = particles[i];
+      p.x += p.xv;
+      p.y += p.yv;
+      var v = 255-p.age*3;
+      c.fillStyle = "rgb("+v+","+v+","+v+")";
+      c.fillRect(p.x,p.y,3,3);
+      p.age++;
+    }
+  }
+};
+
+function drawPlayerBullets(c) {
+  c.fillStyle = "blue";
+  for(i in playerBullets) {
+    var bullet = playerBullets[i];
+    var count = Math.floor(bullet.counter/4);
+    var xoff = (count%4)*24;
+    //c.fillRect(bullet.x, bullet.y, bullet.width,bullet.height);
+    c.drawImage(
+      bullet_image,
+      xoff+10,0+9,8,8,
+      bullet.x,bullet.y,bullet.width,bullet.height
+    );
+  }
+}
+
+// =========== background ============
+function drawBackground(c) {
+	c.fillStyle = "black";
+	c.fillRect(0,0,can.width,can.height);
+}
+
+function drawInfo(){
+	c.fillStyle = "red";
+	c.font = "14pt Shoguns Clan";
+	c.fillText('Pause - Escape',10,can.height-20);
+}
+
+// =========== enemies ===============
+function drawEnemies(c) {
+  for(var i in enemies) {
+    var enemy = enemies[i];
+    if(enemy.state == "alive") {
+      c.fillStyle = "red";
+      drawEnemy(c,enemy,15);
+    }
+    if(enemy.state == "hit") {
+      c.fillStyle = "purple";
+      enemy.shrink--;
+      drawEnemy(c,enemy,enemy.shrink);
+    }
+    // вероятно, никогда не будет вызвана
+    if(enemy.state == "dead") {
+      c.fillStyle = "black";
+      c.drawEnemy(c,enemy,15);
+    }
+  }
+}
+
+function drawEnemy(c,enemy,radius) {
+  if(radius <=0) radius = 1;
+  var theta = enemy.counter;
+  c.save();
+  c.translate(0,30);
+  // рисуем фоновый круг
+  circlePath(c, enemy.x, enemy.y, radius*2);
+  c.fill();
+  // рисуем волнистые точки
+  for(var i=0; i<10; i++) {
+    var xoff = Math.sin(toRadians(theta+i*36*2))*radius;
+    var yoff = Math.sin(toRadians(theta+i*36*1.5))*radius;
+    circlePath(c, enemy.x + xoff, enemy.y + yoff, 3);
+    c.fillStyle = "green";
+    c.fill();
+  }
+  c.restore();
+}
+
+function toRadians(d) {
+  return d * Math.PI * 2.0 / 360.0;
+}
+
+function circlePath(c, x, y, r) {
+  c.beginPath();
+  c.moveTo(x,y);
+  c.arc(x,y, r, 0, Math.PI*2);
+}
+
+function createEnemyBullet(enemy) {
+    return {
+        x:enemy.x,
+        y:enemy.y+enemy.height,
+        width:30,
+        height:30,
+        counter:0,
+    }
+}
+
+function drawEnemyBullets(c) {
+    for(var i in enemyBullets) {
+    var bullet = enemyBullets[i];
+    //c.fillStyle = "yellow";
+    //c.fillRect(bullet.x, bullet.y , bullet.width, bullet.height);
+    var xoff = (bullet.counter%9)*12 + 1;
+    var yoff = 1;
+    c.drawImage(bomb_image,
+      xoff,yoff,11,11,
+      bullet.x,bullet.y,bullet.width,bullet.height
+    );
+  }
+}
+
+function firePlayerBullet() {
+  // создаём новую пулю
+  playerBullets.push({
+    x: player.x,
+    x: player.x+14,
+    y: player.y - 5,
+    width:10,
+    height:10,
+    width:20,
+    height:20,
+    counter:0,
+  });
+}
+
+// =========== overlay ===============
+function drawOverlay(c) {
+	if(overlay.counter == -1) return;
+	var alpha = overlay.counter/50.0;
+	if(alpha > 1) alpha = 1;
+	c.globalAlpha = alpha;
+	switch(game.state){
+		case 'over':
+    audio.pause();
+    audio.currentTime = 0;
+    audi3.play();
+			overlay.x = 50; overlay.y = 200;
+			overlay.subx = 190; overlay.suby = 250;
+			c.fillStyle = "red";
+			c.font = "Bold 40pt Shoguns Clan";
+			c.fillText("Skol`ko bilo pomoshi?",overlay.x,overlay.y);
+			c.font = "14pt Shoguns Clan";
+			c.fillText("press space to play solyanova again", overlay.subx,overlay.suby);
+		break;
+		case 'won':
+    audio.pause();
+    audio.currentTime = 0;
+    audi2.play();
+			overlay.x = 40; overlay.y = 200;
+			overlay.subx = 190; overlay.suby = 250;
+			c.fillStyle = "red";
+			c.font = "Bold 40pt Shoguns Clan";
+			c.fillText("VI KA V SOLYANOVA EZ",overlay.x,overlay.y);
+			c.font = "14pt Shoguns Clan";
+			c.fillText("press space to play solyanova again", overlay.subx,overlay.suby);
+		break;
+		case 'pause':
+    audio.pause();
+    audio.currentTime = 0;
+			overlay.x = 220; overlay.y = 200;
+			overlay.subx = 170; overlay.suby = 250;
+			overlay.title = "Pause";
+			overlay.subtitle = "Press SPACE for resume";
+			c.fillStyle = "red";
+			c.font = "Bold 40pt Shoguns Clan";
+			c.fillText(overlay.title,overlay.x,overlay.y);
+			c.font = "14pt Shoguns Clan";
+			c.fillText(overlay.subtitle, overlay.subx,overlay.suby);
+			c.fillText('Exit to MENU press M', 10,can.height-20);
+		break;
+		case 'menu':
+    audio.pause();
+    audio.currentTime = 0;
+    audi2.pause();
+    audi2.currentTime = 0;
+    audi3.pause();
+    audi3.currentTime = 0;
+			c.fillStyle = "red";
+			c.font = "Bold 40pt Shoguns Clan";
+			c.fillText('Papich Vs CoronaVirus',40,80);
+			c.font = "Bold 14pt Shoguns Clan";
+			c.fillText('Press Enter for start',200,200);
+		break;
+	}
+}
+
+// =========== menu ===============
+function Start(){
+  audio.play()
+    game.state = "start";
+    player.state = "alive";
+    overlay.counter = -1;
+}
+
+
+
+
+// =========== setup ==============
+doSetup();
+setInterval(mainLoop,1000/30);
+</script>
+</div>
+<div>
+  <p>Пояснительный словарь</p>
+  <p>VI KA - Победа (победная музыка)</p>
+  <p>solyanova - в одиночку без чей либо помощи</p>
+  <p>ez- легко</p>
+  <p>шрифт был только на английском языке</p>
+  <p>в планах: Счет, уровни, переделать анимации, добавить звук</p>
+  <br>
+  <br>
+  <p>приболел</p>
+
+</div>
+<div>
+  <h2>Фотографии</h2>
+  <details>
+    <h1>Виталий "Arthas" Цаль. Стример. Телевизор 21 века. В прошлом лучший игрок в Dota 2 и Worms (червяки)</h1>
+  <img src="images/Papyla.png"><br>
+  <img src="images/img1.jpg"><br>
+  <img src="images/img2.jpg">
+  </details>
+</div>
+
+</body>
+</html>
