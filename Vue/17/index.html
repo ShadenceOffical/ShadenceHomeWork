@@ -1,0 +1,31 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>17</title>
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+	</head>
+	
+	<body>	
+	<p>1</p>
+	<div id="q1">
+		<a href='pathofexile.com' v-on:click.prevent="doThis">{{ttt}}</a>
+		<p>{{ tex }}</p>
+	</div>
+	
+	<p>3</p>
+	<div id="q3">
+		<p v-once>{{ tex1 }}</p>
+		<button v-on:click="addItem">{{ tex1 }}</button>
+	</div>
+	
+	<p>4</p>
+	<div id="q4">
+		<p>{{ tex2 }}</p>
+		<button v-on:click="addItem">Тег a</button>
+	</div>
+
+	
+	<script type="text/javascript" src="js.js"></script>
+	</body>
+	
+</html>
